@@ -7,7 +7,7 @@ include_directories(include)
 set(CMAKE_CXX_STANDARD 20)
 
 set(HEADERS
-
+    include/bplus_tree.h
 )
 set(SOURCES 
     src/main.cpp
