@@ -184,17 +184,22 @@ private:
     
     static int32_t leaf_index(const Key&  key, const std::vector<Key>& keys)
     {
-        // auto ptr = std::find(keys.begin(), keys.end(), key); // linear search
-        // binary search
-        auto ptr = std::lower_bound(keys.begin(), keys.end(), key);
-        int32_t index = ptr - keys.begin();
+        // linear search is faster than binary search
+        int32_t index = 0;
+        while (index < keys.size() && (keys[index] < key))
+        {
+            ++index;
+        }
         return index;
     }
     
     static int32_t inner_index(const Key& key, const std::vector<Key>& keys)
     {  
-        auto ptr = std::upper_bound(keys.begin(), keys.end(), key); 
-        int32_t index = ptr - keys.begin();
+        int32_t index = 0;
+        while (index < keys.size() && (keys[index] < key || keys[index] == key))
+        {
+            ++index;
+        }
         return index;
     }
 
