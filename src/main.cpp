@@ -1,20 +1,46 @@
 #include <iostream>
+#include <chrono>
+#include <map>
 #include "bplus_tree.h"
 
 int main()
 {
-    bplus_tree<int, int> btree(3);
-    btree.insert(0, 0);
-    btree.insert(2, 2);
-    btree.insert(1, 1);
-    btree.insert(3, 3);
+    bplus_tree<int, int> btree(20);
+    std::map<int, int> dict;
 
-    std::cout << btree.contains(2) << std::endl;
-    std::cout << btree.at(2) << std::endl;
-    std::cout << btree.contains(3) << std::endl;
-    std::cout << btree.at(3) << std::endl;
-    std::cout << btree.contains(1) << std::endl;
-    std::cout << btree.at(1) << std::endl;
-    std::cout << btree.contains(0) << std::endl;
-    std::cout << btree.at(0) << std::endl;
+    auto begin = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++)
+    {
+        dict.insert(std::make_pair(i, i));
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double, std::milli>(end - begin);
+    std::cout << "map init: " << duration.count() << "ms" << std::endl;
+
+    begin = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++)
+    {
+        btree.insert(i, i);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(end - begin);
+    std::cout << "btree init: " << duration.count() << "ms" << std::endl;
+
+    begin = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++)
+    {
+        dict.contains(i);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(end - begin);
+    std::cout << "map search: " << duration.count() << "ms" << std::endl;
+
+    begin = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000000; i++)
+    {
+        btree.contains(i);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<double, std::milli>(end - begin);
+    std::cout << "btree search: " << duration.count() << "ms" << std::endl;
 }
