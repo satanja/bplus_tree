@@ -40,7 +40,7 @@ public:
         else 
         {
             auto current_node = std::reinterpret_pointer_cast<inner_node>(root);
-            split = inner_insert(current_node, key, value, result);
+            split = inner_insert(current_node, key, value, result, depth);
         }
         if (split)
         {
@@ -202,24 +202,35 @@ private:
         std::shared_ptr<inner_node>& node,
         const Key& key,
         const Value& value,
-        insertion_result& result)
+        insertion_result& result,
+        int depth)
     {
         bool split = false;
         if (node->keys.size() != node->keys.capacity())
         {
-            inner_insert_available(node, key, value);
+            inner_insert_available(node, key, value, depth);
         }
         else 
         {
             int32_t threshold = (N + 1) / 2;
             auto sibling = new_inner(N);
+
             for (int32_t i = threshold; i < node->keys.size(); i++)
             {
                 sibling->keys.push_back(std::move(node->keys[i]));
-                node->keys.pop_back();
                 sibling->children.push_back(std::move(node->children[i]));
+                
+            }
+            int last = node->children.size() - 1;
+            sibling->children.push_back(std::move(node->children[last]));
+
+            int count = node->keys.size() - threshold;
+            for (int32_t i = 0; i < count; i++)
+            {
+                node->keys.pop_back();
                 node->children.pop_back();
             }
+            node->children.pop_back();
 
             split = true;
             result.key = node->keys[threshold - 1];
@@ -228,11 +239,11 @@ private:
 
             if (key < result.key)
             {
-                inner_insert_available(node, key, value);
+                inner_insert_available(node, key, value, depth);
             }
             else 
             {
-                inner_insert_available(sibling, key, value);
+                inner_insert_available(sibling, key, value, depth);
             }
         }
         return split;
@@ -241,7 +252,8 @@ private:
     void inner_insert_available(
         std::shared_ptr<inner_node>& node,
         const Key& key,
-        const Value& value)
+        const Value& value,
+        int depth)
     {
         uint32_t index = inner_index(key, node->keys);
         insertion_result result;
@@ -255,7 +267,7 @@ private:
         else 
         {
             auto child = std::reinterpret_pointer_cast<inner_node>(node->children[index]);
-            split = inner_insert(child, key, value, result);
+            split = inner_insert(child, key, value, result, depth - 1);
         }
 
         if (split)
@@ -298,8 +310,13 @@ private:
             for (int32_t i = threshold; i < leaf->keys.size(); i++)
             {
                 sibling->keys.push_back(std::move(leaf->keys[i]));
-                leaf->keys.pop_back();
                 sibling->values.push_back(std::move(leaf->values[i]));
+            }
+
+            int count = leaf->keys.size() - threshold;
+            for (int32_t i = 0; i < count; i++)
+            {
+                leaf->keys.pop_back();
                 leaf->values.pop_back();
             }
 
