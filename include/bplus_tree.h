@@ -130,20 +130,15 @@ public:
 
 private:  
 
-    // enum node_type { LEAF, INNER };
-
     struct node
     {
         std::vector<Key> keys;
-        std::vector<uint8_t> pad; // template this?
-        // node_type type;        
     };
 
     struct leaf_node : node
     {
         leaf_node(size_t m)
         {
-            pad.reserve(0);
             keys.reserve(m);
             values.reserve(m);
         };
@@ -155,7 +150,6 @@ private:
     {
         inner_node(size_t n)
         {
-            pad.reserve(0);
             keys.reserve(n);
             children.reserve(n + 1);
         };
@@ -165,7 +159,7 @@ private:
 
     struct insertion_result
     {
-        Key key; // copy, might be unnecessary 
+        Key key;
         node* left;
         node* right;
     };
