@@ -19,7 +19,7 @@ public:
     
     ~bplus_tree()
     {
-        // Empty. Memory deallocation is done through the smart pointers
+        // TODO
     }
 
     // Bulk load constructor
@@ -34,19 +34,19 @@ public:
         bool split = false;
         if (depth == 0)
         {
-            auto current_node = std::reinterpret_pointer_cast<leaf_node>(root);
+            leaf_node* current_node = reinterpret_cast<leaf_node*>(root);
             split = leaf_insert(current_node, key, value, result);
         }
         else 
         {
-            auto current_node = std::reinterpret_pointer_cast<inner_node>(root);
+            inner_node* current_node = reinterpret_cast<inner_node*>(root);
             split = inner_insert(current_node, key, value, result, depth);
         }
         if (split)
         {
             depth++;
             root = new_inner(N);
-            auto root_proxy = std::reinterpret_pointer_cast<inner_node>(root);
+            inner_node* root_proxy = reinterpret_cast<inner_node*>(root);
             root_proxy->keys.push_back(std::move(result.key));
             root_proxy->children.push_back(result.left);
             root_proxy->children.push_back(result.right);
@@ -56,20 +56,20 @@ public:
     // returns a reference if key is contained in the B+ tree
     const Value& at(const Key& key) const
     {
-        std::shared_ptr<inner_node> inner;
-        std::shared_ptr<node> current_node = root;
+        inner_node* inner;
+        node* current_node = root;
         int32_t d = depth;
         int32_t index = 0;
 
         while (d != 0)
         {
-            inner = std::reinterpret_pointer_cast<inner_node>(current_node);
+            inner = reinterpret_cast<inner_node*>(current_node);
             index = inner_index(key, inner->keys);
             current_node = inner->children[index];
             d--;
         }
 
-        auto leaf = std::reinterpret_pointer_cast<leaf_node>(current_node);
+        leaf_node* leaf = reinterpret_cast<leaf_node*>(current_node);
         if (leaf->keys.size() != 0)
         {
             index = leaf_index(key, leaf->keys);
@@ -81,20 +81,20 @@ public:
     // returns a const reference if key is contained in the B+ tree
     Value& at(const Key& key)
     {
-        std::shared_ptr<inner_node> inner;
-        std::shared_ptr<node> current_node = root;
+        inner_node* inner;
+        node* current_node = root;
         int32_t d = depth;
         int32_t index = 0;
 
         while (d != 0)
         {
-            inner = std::reinterpret_pointer_cast<inner_node>(current_node);
+            inner = reinterpret_cast<inner_node*>(current_node);
             index = inner_index(key, inner->keys);
             current_node = inner->children[index];
             d--;
         }
 
-        auto leaf = std::reinterpret_pointer_cast<leaf_node>(current_node);
+        leaf_node* leaf = reinterpret_cast<leaf_node*>(current_node);
         if (leaf->keys.size() != 0)
         {
             index = leaf_index(key, leaf->keys);
@@ -105,20 +105,20 @@ public:
 
     bool contains(const Key& key)
     {
-        std::shared_ptr<inner_node> inner;
-        std::shared_ptr<node> current_node = root;
+        inner_node* inner;
+        node* current_node = root;
         int32_t d = depth;
         int32_t index = 0;
 
         while (d != 0)
         {
-            inner = std::reinterpret_pointer_cast<inner_node>(current_node);
+            inner = reinterpret_cast<inner_node*>(current_node);
             index = inner_index(key, inner->keys);
             current_node = inner->children[index];
             d--;
         }
 
-        auto leaf = std::reinterpret_pointer_cast<leaf_node>(current_node);
+        leaf_node* leaf = reinterpret_cast<leaf_node*>(current_node);
         if (leaf->keys.size() != 0)
         {
             index = leaf_index(key, leaf->keys);
@@ -130,20 +130,18 @@ public:
 
 private:  
 
-    enum node_type { LEAF, INNER };
+    // enum node_type { LEAF, INNER };
 
     struct node
     {
         std::vector<Key> keys;
         std::vector<uint8_t> pad; // template this?
-        node_type type;
-
-        node(node_type t) : type(t) {}
+        // node_type type;        
     };
 
     struct leaf_node : node
     {
-        leaf_node(size_t m) : node(LEAF) 
+        leaf_node(size_t m)
         {
             pad.reserve(0);
             keys.reserve(m);
@@ -155,31 +153,31 @@ private:
 
     struct inner_node : node 
     {
-        inner_node(size_t n) : node(INNER)
+        inner_node(size_t n)
         {
             pad.reserve(0);
             keys.reserve(n);
             children.reserve(n + 1);
         };
 
-        std::vector<std::shared_ptr<node>> children;
+        std::vector<node*> children;
     };
 
     struct insertion_result
     {
         Key key; // copy, might be unnecessary 
-        std::shared_ptr<node> left;
-        std::shared_ptr<node> right;
+        node* left;
+        node* right;
     };
 
-    std::shared_ptr<leaf_node> new_leaf(size_t m)
+    leaf_node* new_leaf(size_t m)
     {
-        return std::shared_ptr<leaf_node>(new leaf_node(m));
+        return new leaf_node(m);
     }
 
-    std::shared_ptr<inner_node> new_inner(size_t n)
+    inner_node* new_inner(size_t n)
     {
-        return std::shared_ptr<inner_node>(new inner_node(n));
+        return new inner_node(n);
     }
     
     static int32_t leaf_index(const Key&  key, const std::vector<Key>& keys)
@@ -204,7 +202,7 @@ private:
     }
 
     bool inner_insert(
-        std::shared_ptr<inner_node>& node,
+        inner_node* node,
         const Key& key,
         const Value& value,
         insertion_result& result,
@@ -218,16 +216,15 @@ private:
         else 
         {
             int32_t threshold = (N + 1) / 2;
-            auto sibling = new_inner(N);
+            inner_node* sibling = new_inner(N);
 
             for (int32_t i = threshold; i < node->keys.size(); i++)
             {
                 sibling->keys.push_back(std::move(node->keys[i]));
-                sibling->children.push_back(std::move(node->children[i]));
-                
+                sibling->children.push_back(node->children[i]);
             }
             int last = node->children.size() - 1;
-            sibling->children.push_back(std::move(node->children[last]));
+            sibling->children.push_back(node->children[last]);
 
             int count = node->keys.size() - threshold;
             for (int32_t i = 0; i < count; i++)
@@ -255,7 +252,7 @@ private:
     }
 
     void inner_insert_available(
-        std::shared_ptr<inner_node>& node,
+        inner_node* node,
         const Key& key,
         const Value& value,
         int depth)
@@ -266,12 +263,12 @@ private:
 
         if (depth - 1 == 0)
         {
-            auto leaf = std::reinterpret_pointer_cast<leaf_node>(node->children[index]);
+            leaf_node* leaf = reinterpret_cast<leaf_node*>(node->children[index]);
             split = leaf_insert(leaf, key, value, result);
         }
         else 
         {
-            auto child = std::reinterpret_pointer_cast<inner_node>(node->children[index]);
+            inner_node* child = reinterpret_cast<inner_node*>(node->children[index]);
             split = inner_insert(child, key, value, result, depth - 1);
         }
 
@@ -294,7 +291,7 @@ private:
     }
 
     bool leaf_insert(
-        std::shared_ptr<leaf_node> leaf,
+        leaf_node* leaf,
         const Key& key,
         const Value& value,
         insertion_result& result)
@@ -308,14 +305,14 @@ private:
         else
         {
             int32_t threshold = (M + 1) / 2;
-            auto sibling = new_leaf(M);
+            leaf_node* sibling = new_leaf(M);
 
             // moves keys and values into their new leaf rather than copying
             // requires move constructor for the Key and Value!
             for (int32_t i = threshold; i < leaf->keys.size(); i++)
             {
                 sibling->keys.push_back(std::move(leaf->keys[i]));
-                sibling->values.push_back(std::move(leaf->values[i]));
+                sibling->values.push_back(leaf->values[i]);
             }
 
             int count = leaf->keys.size() - threshold;
@@ -343,7 +340,7 @@ private:
     }
 
     void leaf_insert_available(
-        std::shared_ptr<leaf_node> leaf,
+        leaf_node* leaf,
         const Key& key,
         const Value& value,
         int32_t index)
@@ -362,7 +359,7 @@ private:
         }
     }
 
-    std::shared_ptr<node> root;
+    node* root;
     const size_t N;
     const size_t M;
     int32_t depth;
