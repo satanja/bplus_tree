@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #pragma once
+#pragma warning( disable : 4267 )
 
 // @brief B+ tree implementation.
 // @param Key: type of key contained in each node
