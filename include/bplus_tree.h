@@ -301,7 +301,6 @@ private:
                 node->keys.pop_back();
                 node->children.pop_back();
             }
-            node->children.pop_back();
 
             split = true;
             result.key = node->keys[threshold - 1];
@@ -453,7 +452,8 @@ private:
         else 
         {
             leaf_node* leaf = reinterpret_cast<leaf_node*>(node);
-            delete leaf;
+            // TODO fix deletions
+            // delete leaf;
         }
     }
 };
