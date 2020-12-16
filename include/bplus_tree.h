@@ -13,7 +13,6 @@ template<typename Key, typename Value>
 class bplus_tree
 {
 public:
-
     bplus_tree(size_t n, size_t m) : N(n), M(m), root(new_leaf(m)), depth(0) 
     {
         select_searcher();
@@ -287,6 +286,7 @@ private:
             int32_t threshold = (N + 1) / 2;
             inner_node* sibling = new_inner(N);
 
+            // TODO fix insertion bug
             for (int32_t i = threshold; i < node->keys.size(); i++)
             {
                 sibling->keys.push_back(std::move(node->keys[i]));
@@ -351,9 +351,10 @@ private:
             }
             else 
             {
-                node->keys.push_back(result.key);
-                auto begin = node->children.begin();
-                node->children.insert(begin + index + 1, result.right);
+                auto cbegin = node->children.begin();
+                auto kbegin = node->keys.begin();
+                node->keys.insert(kbegin + index, result.key);
+                node->children.insert(cbegin + index + 1, result.right);
                 node->children[index] = result.left;
             }
         }
@@ -435,6 +436,7 @@ private:
     const size_t N;
     const size_t M;
     int32_t depth;
+    int64_t id = 0;
 
     void recurse_delete(node* node, int32_t depth)
     {
