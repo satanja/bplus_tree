@@ -14,9 +14,15 @@ class bplus_tree
 {
 public:
 
-    bplus_tree(size_t n, size_t m) : N(n), M(m), root(new_leaf(m)), depth(0) {}
+    bplus_tree(size_t n, size_t m) : N(n), M(m), root(new_leaf(m)), depth(0) 
+    {
+        select_searcher();
+    }
 
-    bplus_tree(size_t n) : N(n), M(n), root(new_leaf(n)), depth(0) {}
+    bplus_tree(size_t n) : N(n), M(n), root(new_leaf(n)), depth(0) 
+    {
+        select_searcher();
+    }
     
     ~bplus_tree()
     {
@@ -131,6 +137,85 @@ public:
 
 private:  
 
+    // selecting a search strategy based on input parameters
+    struct inner_searcher 
+    {
+        virtual int32_t find(const Key& key, const std::vector<Key>& keys) = 0;
+    };
+
+    struct leaf_searcher
+    {
+        virtual int32_t find(const Key& key, const std::vector<Key>& keys) = 0;
+    };
+
+    struct linear_inner_searcher : inner_searcher
+    {
+        int32_t find(const Key& key, const std::vector<Key>& keys)
+        {
+            int32_t index = 0;
+            while (index < keys.size() && (keys[index] < key || keys[index] == key))
+            {
+                ++index;
+            }
+            return index;
+        }
+    };
+
+    struct binary_inner_searcher : inner_searcher
+    {
+        int32_t find(const Key& key, const std::vector<Key>& keys)
+        {
+            auto ptr = std::upper_bound(keys.begin(), keys.end(), key);
+            int32_t index = ptr - keys.begin();
+            return index;
+        }
+    };
+
+    struct linear_leaf_searcher : leaf_searcher
+    {
+        int32_t find(const Key& key, const std::vector<Key>& keys)
+        {
+            int32_t index = 0;
+            while (index < keys.size() && (keys[index] < key))
+            {
+                ++index;
+            }
+            return index;
+        }
+    };
+
+    struct binary_leaf_searcher : leaf_searcher
+    {
+        int32_t find(const Key& key, const std::vector<Key>& keys)
+        {
+            auto ptr = std::lower_bound(keys.begin(), keys.end(), key);
+            int32_t index = ptr - keys.begin();
+            return index;
+        }
+    };
+
+    void select_searcher()
+    {
+        if (N >= 15)
+        {
+            inner_finder = new binary_inner_searcher();
+        }
+        else 
+        {
+            inner_finder = new linear_inner_searcher();
+        }
+
+        if (M >= 15)
+        {
+            leaf_finder = new binary_leaf_searcher();
+        }
+        else 
+        {
+            leaf_finder = new linear_leaf_searcher();
+        }
+    }
+
+    // inner nodes of the tree
     struct node
     {
         std::vector<Key> keys;
@@ -175,25 +260,14 @@ private:
         return new inner_node(n);
     }
     
-    static int32_t leaf_index(const Key&  key, const std::vector<Key>& keys)
+    int32_t leaf_index(const Key&  key, const std::vector<Key>& keys)
     {
-        // linear search is faster than binary search
-        int32_t index = 0;
-        while (index < keys.size() && (keys[index] < key))
-        {
-            ++index;
-        }
-        return index;
+        return leaf_finder->find(key, keys);
     }
     
-    static int32_t inner_index(const Key& key, const std::vector<Key>& keys)
+    int32_t inner_index(const Key& key, const std::vector<Key>& keys)
     {  
-        int32_t index = 0;
-        while (index < keys.size() && (keys[index] < key || keys[index] == key))
-        {
-            ++index;
-        }
-        return index;
+        return inner_finder->find(key, keys);
     }
 
     bool inner_insert(
@@ -355,6 +429,9 @@ private:
     }
 
     node* root;
+    inner_searcher* inner_finder;
+    leaf_searcher* leaf_finder;
+    
     const size_t N;
     const size_t M;
     int32_t depth;
