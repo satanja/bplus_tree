@@ -19,7 +19,7 @@ public:
     
     ~bplus_tree()
     {
-        // TODO
+        recurse_delete(root, depth);
     }
 
     // Bulk load constructor
@@ -200,7 +200,7 @@ private:
         const Key& key,
         const Value& value,
         insertion_result& result,
-        int depth)
+        int32_t depth)
     {
         bool split = false;
         if (node->keys.size() != node->keys.capacity())
@@ -217,10 +217,10 @@ private:
                 sibling->keys.push_back(std::move(node->keys[i]));
                 sibling->children.push_back(node->children[i]);
             }
-            int last = node->children.size() - 1;
+            int32_t last = node->children.size() - 1;
             sibling->children.push_back(node->children[last]);
 
-            int count = node->keys.size() - threshold;
+            int32_t count = node->keys.size() - threshold;
             for (int32_t i = 0; i < count; i++)
             {
                 node->keys.pop_back();
@@ -249,7 +249,7 @@ private:
         inner_node* node,
         const Key& key,
         const Value& value,
-        int depth)
+        int32_t depth)
     {
         uint32_t index = inner_index(key, node->keys);
         insertion_result result;
@@ -309,7 +309,7 @@ private:
                 sibling->values.push_back(leaf->values[i]);
             }
 
-            int count = leaf->keys.size() - threshold;
+            int32_t count = leaf->keys.size() - threshold;
             for (int32_t i = 0; i < count; i++)
             {
                 leaf->keys.pop_back();
@@ -357,4 +357,23 @@ private:
     const size_t N;
     const size_t M;
     int32_t depth;
+
+    void recurse_delete(node* node, int32_t depth)
+    {
+        if (depth != 0)
+        {
+            // inner
+            inner_node* inner = reinterpret_cast<inner_node*>(node);
+            for (auto ptr : inner->children)
+            {
+                recurse_delete(ptr, depth - 1);
+            }
+            delete inner;
+        }
+        else 
+        {
+            leaf_node* leaf = reinterpret_cast<leaf_node*>(node);
+            delete leaf;
+        }
+    }
 };
